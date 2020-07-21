@@ -1,0 +1,724 @@
+openapi: 3.0.0
+info:
+  title: partner.v1
+  version: '1.0'
+servers:
+  - url: 'http://localhost:3000'
+paths:
+  '/{partnerId}/measurements/mailbox':
+    parameters:
+      - schema:
+          type: string
+        name: partnerId
+        in: path
+        required: true
+    post:
+      summary: Get data (via mailbox)
+      operationId: post-measurements-mailbox
+      responses:
+        '200':
+          description: |-
+            If the `status` is 0 (success), then the response includes a `requestId`. This parameter will be included when sending data to the partner's `/receive-measurements` endpoint.
+
+            The response includes a `status` and optional `reason`.
+
+            | status | description |
+            | ------------- |
+            | 0 | success |
+            | 1 | unexpected error; partner should give us the `reason` for investigation |
+            | 2 | missing bearer token in header |
+            | 3 | invalid token; partner’s responsibility to delete connection on their end |
+            | 4 | bearer token expired; partner needs to refresh their token |
+            | 5 | partner is invalid (disabled) |
+            | 6 | data request denied for user’s country |
+            | 7 | account does not exist; partner’s responsibility to delete connection on their end |
+            | 8 | wrong endpoint (region) for the patient account; `endpoint` contains the correct  URL for future requests |
+            | 9 | scope not included on the connection |
+            | 10 | inbox is empty, there’s no glucose to retrieve |
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  reason:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      requestId:
+                        type: string
+                      endpoint:
+                        type: string
+              examples:
+                example-1: {}
+      description: |-
+        `/measurements/mailbox` is the preferred endpoint for retrieving data. This endpoint would normally be called in response to receiving an upload notification.
+
+        The response doesn't include any actual data. Instead the response includes a `requestId`. The data will then be POSTed to an endpoint hosted by the partner. (see the `/receive-measurements` endpoint for details)
+    get:
+      summary: GET OPERATION NOT IMPLEMENTED
+      operationId: get-measurements-mailbox
+      responses:
+        '200':
+          description: OK
+      description: '> GET OPERATION NOT IMPLEMENTED'
+  '/{partnerId}/measurements/timestamp':
+    parameters:
+      - schema:
+          type: string
+        name: partnerId
+        in: path
+        required: true
+    get:
+      summary: GET OPERATION NOT IMPLEMENTED
+      tags: []
+      responses: {}
+      operationId: get-measurements-timestamp
+      description: '> GET OPERATION NOT IMPLEMENTED'
+    post:
+      summary: Get data (via timestamp)
+      operationId: get-measurements-timestamp
+      responses:
+        '200':
+          description: |-
+            If the `status` is 0 (success), then the response includes a `requestId`. This parameter will be included when sending data to the partner's `/receive-measurements` endpoint.
+
+            The response includes a `status` and optional `reason`.
+
+            | status | description |
+            | ------------- |
+            | 0 | success |
+            | 1 | unexpected error; partner should give us the `reason` for investigation |
+            | 2 | missing bearer token in header |
+            | 3 | invalid token; partner’s responsibility to delete connection on their end |
+            | 4 | bearer token expired; partner needs to refresh their token |
+            | 5 | partner is invalid (disabled) |
+            | 6 | data request denied for user’s country |
+            | 7 | account does not exist; partner’s responsibility to delete connection on their end |
+            | 8 | wrong endpoint (region) for the patient account; `endpoint` contains the correct  URL for future requests |
+            | 9 | scope not included on the connection |
+            | 10 | malformed request |
+            | 11 | no glucose to retreive for this time range |
+            | 12 | requested data from before the connection established (partner isn’t allowed) |
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    description: ''
+                  reason:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      requestId:
+                        type: string
+                      endpoint:
+                        type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                from:
+                  type: string
+                  description: 'user timestamp in ISO 8601 format, inclusive'
+                to:
+                  type: string
+                  description: 'user timestamp in ISO 8601 format, exclusive'
+        description: '`from` and `to` are ISO 8601 strings and timezone is ignored. Timestamps are in user time. `from` is inclusive and `to` is exclusive. '
+      description: |-
+        The `/measurements/timestamp` endpoint is used to request a user's data within a specified time range.
+
+        The response doesn't include any actual data. Instead the response includes a `requestId`. The data will then be POSTed to an endpoint hosted by the partner. (see the `/receive-measurements` endpoint for details)
+  '/{partnerId}/metrics':
+    parameters:
+      - schema:
+          type: string
+        name: partnerId
+        in: path
+        required: true
+    get:
+      summary: GET OPERATION NOT IMPLEMENTED
+      tags: []
+      responses: {}
+      operationId: get-metrics
+      description: '> GET OPERATION NOT IMPLEMENTED'
+    post:
+      summary: Get Glucometrics
+      operationId: post-metrics
+      responses:
+        '200':
+          description: |-
+            If the `status` is 0 (success), then the response includes a `requestId`. This parameter will be included when sending data to the partner's `/receive-metrics` endpoint.
+
+            The response includes a `status` and optional `reason`.
+
+            | status | description |
+            | ------------- |
+            | 0 | success |
+            | 1 | unexpected error; partner should give us the `reason` for investigation |
+            | 2 | missing bearer token in header |
+            | 3 | invalid token; partner’s responsibility to delete connection on their end |
+            | 4 | bearer token expired; partner needs to refresh their token |
+            | 5 | partner is invalid (disabled) |
+            | 6 | data request denied for user’s country |
+            | 7 | account does not exist; partner’s responsibility to delete connection on their end |
+            | 8 | wrong endpoint (region) for the patient account; `endpoint` contains the correct  URL for future requests |
+            | 9 | scope not included on the connection (applies to the metrics endpoint itself); can also apply if one of the metrics requested is not allowed for the partner; can also apply if they specify a period or timerange that they aren’t allowed to have |
+            | 10 | malformed request |
+            | 11 | can mean the requested time range is beyond the limit (90 days); unknown metric type; unknown period |
+            | 12 | requested data from before the connection established (partner isn’t allowed); based on `endDate` |
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: number
+                  reason:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      requestId:
+                        type: string
+                      endpoint:
+                        type: string
+      description: |-
+        The `/metrics` endpoint is used to request metrics (e.g. average glucose) over a specified time period.
+
+        The response doesn't include any actual metrics. Instead the response includes a `requestId`. The metrics will then be POSTed to an endpoint hosted by the partner. (see the `/receive-metrics` endpoint for details)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: ''
+              properties:
+                metrics:
+                  type: array
+                  items:
+                    type: string
+                endDate:
+                  type: string
+                period:
+                  type: string
+                to:
+                  type: string
+                from:
+                  type: string
+                settings:
+                  type: object
+                  properties:
+                    unitOfMeasurement:
+                      type: string
+                    targetRangeLow:
+                      type: number
+                    targetRangeHigh:
+                      type: number
+                    lowGlucoseThreshold:
+                      type: number
+                    highGlucoseThreshold:
+                      type: number
+        description: |-
+          <!-- theme: warning -->
+          > The client can specify the period to be used for the metrics in two different ways:
+          > 1. By `endDate` and `period`
+          > 2. By `to` and `from`
+          >
+          > Use exactly one method. Specifying neither or both will result in an error.
+
+          #### Specifying period
+          | period |
+          | ------------- |
+          | oneWeek |
+          | twoWeeks |
+          | threeWeeks |
+          | fourWeeks |
+          | sixtyDays|
+          | ninetyDays|
+
+          #### Specifying metrics
+          | metrics |
+          | ------------- |
+          | averageGlucose |
+          | coefficientOfVariation |
+          | daysSensorWorn |
+          | percentDataCaptured |
+          | timeInRange |
+          | numberOfScans |
+          | numberOfHypoglycemicEvents |
+          | numberOfHyperglycemicEvents |
+
+          #### Specifying settings
+          If `settings` is not specified, the system will use partner-configured defaults. These can be overridden by specifying a `settings` object.
+
+          The settings object includes the unit of measurement as well as targets and thresholds.
+
+          | unitOfMeasurement |
+          | ------------- |
+          | mgPerDl |
+          | mmolPerL |
+  '/{partnerId}/reports':
+    parameters:
+      - schema:
+          type: string
+        name: partnerId
+        in: path
+        required: true
+    get:
+      summary: GET OPERATION NOT IMPLEMENTED
+      tags: []
+      responses: {}
+      operationId: get-reports
+      description: '> GET OPERATION NOT IMPLEMENTED'
+    post:
+      summary: Get Report
+      operationId: post-reports
+      responses:
+        '200':
+          description: |-
+            The response object includes a `status` and optional `reason`. If the status is 0 (success), then the `data` property contains the `requestId`. This id will be included when POSTing the reports to the partner's `/receive-report` endpoint.
+
+            The response includes a `status` and optional `reason`.
+
+            | status | description |
+            | ------------- |
+            | 0 | success |
+            | 1 | unexpected error; partner should give us the `reason` for investigation |
+            | 2 | missing bearer token in header |
+            | 3 | invalid token; partner’s responsibility to delete connection on their end |
+            | 4 | bearer token expired; partner needs to refresh their token |
+            | 5 | partner is invalid (disabled) |
+            | 6 | data request denied for user’s country |
+            | 7 | account does not exist; partner’s responsibility to delete connection on their end |
+            | 8 | wrong endpoint (region) for the patient account; `endpoint` contains the correct  URL for future requests |
+            | 9 | scope not included on the connection (applies to the metrics endpoint itself); can also apply if one of the metrics requested is not allowed for the partner; can also apply if they specify a period or timerange that they aren’t allowed to have; if they ask for a device type they aren’t allowed to have |
+            | 10 | the body is malformed |
+            | 11 | unknown report type; unknown period |
+            | 12 | requested data from before the connection established (partner isn’t allowed); based on `endDate` |
+            | 13 | if `deviceTypes` is specified but the patient doesn’t have any of those specified device types |
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: number
+                  reason:
+                    type: object
+                  data:
+                    type: object
+                    properties:
+                      requestId:
+                        type: string
+                      endpoint:
+                        type: string
+      description: |-
+        The `/report` endpoint is used to request one or more reports.
+
+        The response doesn't include any actual reports. Instead the response includes a `requestId`. The reports will then be POSTed to an endpoint hosted by the partner. (see the `/receive-report` endpoint for details)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reports:
+                  type: array
+                  items:
+                    type: string
+                endDate:
+                  type: string
+                period:
+                  type: string
+                deviceTypes:
+                  type: array
+                  items:
+                    type: string
+                settings:
+                  type: object
+                  properties:
+                    unitOfMeasurement:
+                      type: string
+                    targetRangeLow:
+                      type: number
+                    targetRangeHigh:
+                      type: number
+                    lowGlucoseThreshold:
+                      type: number
+                    highGlucoseThreshold:
+                      type: number
+              required:
+                - reports
+        description: |-
+          #### Specifying reports
+          Specify one or more reports using the `reports` array parameter:
+
+          | reports |
+          | ------------- |
+          | glucosePatternInsights |
+          | monthlySummary |
+          | dailyLog |
+          | snapshot |
+          | mealtimePatterns |
+          | weeklySummary |
+          | readerDetails |
+          | dailyPatterns |
+          | agpReport |
+
+          #### Specifying device types
+          By default, all device types will be used to generate the reports. To specify a subset of device types, use the `deviceTypes` array parameter:
+
+          | deviceTypes |
+          | ------------- |
+          | freeStyleLibreLink |
+          | freeStyleLibreLink2 |
+          | freeStyleLibreLink3 |
+          | freeStyleLibre |
+          | freeStyleLibre2 |
+          | freeStyleLibre3 |
+
+          #### Specifying the reporting period
+          By default, the end date will be calculated based on the latest available data. The request can override this behavior by specifying an `endDate` (ISO 8601-formatted string with timezone ignored).
+
+          The reporting period is specified with the `period` parameter:
+
+          | period |
+          | ------------- |
+          | oneWeek |
+          | twoWeeks |
+          | threeWeeks |
+          | fourWeeks |
+          | sixtyDays|
+          | ninetyDays|
+
+          #### Specifying report settings
+          If `settings` is not specified, the system will use partner-configured defaults. These can be overridden by specifying a `settings` object.
+
+          The settings object includes the unit of measurement as well as targets and thresholds.
+
+          | unitOfMeasurement |
+          | ------------- |
+          | mgPerDl |
+          | mmolPerL |
+  '/{partnerId}/account':
+    parameters:
+      - schema:
+          type: string
+        name: partnerId
+        in: path
+        required: true
+    get:
+      summary: Get Account
+      tags: []
+      responses: {}
+      operationId: get-account
+      description: TODO
+  '/{partnerId}/devices/{deviceId}':
+    parameters:
+      - schema:
+          type: string
+        name: partnerId
+        in: path
+        required: true
+      - schema:
+          type: string
+        name: deviceId
+        in: path
+        required: true
+    get:
+      summary: Get Device
+      tags: []
+      responses: {}
+      operationId: get-devices-deviceId
+      description: TODO
+  /receive-notification:
+    parameters: []
+    get:
+      summary: GET OPERATION NOT IMPLEMENTED
+      tags: []
+      operationId: get-receive-notification
+      description: '> GET OPERATION NOT IMPLEMENTED'
+    post:
+      summary: Receive Upload Notification
+      operationId: post-receive-notification
+      responses:
+        '200':
+          description: |-
+            | status | description |
+            | ------------- |
+            | 0 | the notification was successfully received by the partner |
+            | 1 | the account does not exist in the partner's system. If the consent is less than five minutes old, then the notication will be retried. If the consent is more than five minutes old, then the consent will be deleted. |
+            | 2 |  `partnerAccountId` and `libreViewAccountId` do not match what is stored in the partner's system. LibreView will delete the consent. |
+
+            For any other response, the notification will be attempted up to five times using a backoff strategy.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+        '':
+          description: |-
+            | status | description |
+            | ------------- |
+            | 0 | the notification was successfully received by the partner |
+            | 1 | the account does not exist in the partner's system. If the consent is less than five minutes old, then the notication will be retried. If the consent is more than five minutes old, then the consent will be deleted. |
+            | 2 |  `partnerAccountId` and `libreViewAccountId` do not match what is stored in the partner's system. LibreView will delete the consent. |
+
+            For any other response, the notification will be attempted up to five times using a backoff strategy.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+      description: |-
+        > This endpoint is implemented by each partner, but the requirements are documented here.
+
+        > The actual URL of the endpoint can be anything, i.e. it doesn't have to be `/receive-notification`, or even consistent between environments.
+
+        When a user uploads data, a notification is sent to this endpoint.
+
+        The notification includes both the user's ID as assigned by the partner (`partnerAccountId`), and the user's ID as assigned by LibreView (`libreViewAccountId`).
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                partnerAccountd:
+                  type: string
+                libreViewAccountId:
+                  type: string
+                uploadId:
+                  type: string
+  /receive-measurements:
+    get:
+      summary: GET OPERATION NOT IMPLEMENTED
+      tags: []
+      responses: {}
+      operationId: get-receive-measurements
+      description: '> GET OPERATION NOT IMPLEMENTED'
+    post:
+      summary: Receive Measurements
+      operationId: post-receive-measurements
+      description: |-
+        > This endpoint is implemented by each partner, but the requirements are documented here.
+
+        > The actual URL of the endpoint can be anything, i.e. it doesn't have to be `/receive-measurements`, or even consistent between environments.
+
+        Data is requested through any of the `/measurements` endpoints. These endpoints don't actually return any data. They return a `requestId`. Actual data is sent to partners asynchronously via the `/receive-measurements` endpoint.
+
+        A `status` of 9 indicates no data was available.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: number
+                reason:
+                  type: string
+                data:
+                  type: object
+                  properties:
+                    requestId:
+                      type: string
+                    partnerAccountId:
+                      type: string
+                    libreViewAccountId:
+                      type: string
+                    devices:
+                      type: object
+                      properties:
+                        '{deviceId}':
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            deviceType:
+                              type: string
+                            version:
+                              type: string
+                    measurementLog:
+                      type: object
+                      properties:
+                        scheduledContinuousGlucoseEntries:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              recordNumber:
+                                type: integer
+                              timestamp:
+                                type: string
+                              extendedProperties:
+                                type: object
+                                properties:
+                                  factoryTimestamp:
+                                    type: string
+                                  isFirstAfterTimeChange:
+                                    type: string
+                              valueInMgPerDl:
+                                type: integer
+                        unscheduledContinuousGlucoseEntries:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              extendedProperties:
+                                type: object
+                                properties:
+                                  factoryTimestamp:
+                                    type: string
+                                  isActionable:
+                                    type: string
+                                  trendArrow:
+                                    type: string
+                              recordNumber:
+                                type: integer
+                              timestamp:
+                                type: string
+                              valueInMgPerDl:
+                                type: integer
+            examples:
+              example-1: {}
+        description: |-
+          | status | description |
+          | ------------- | ------------- |
+          | 0 | success |
+          | 9 | no data available |
+      responses:
+        '200':
+          description: |-
+            | status | description |
+            | ------------- |
+            | 0 | the notification was successfully received by the partner |
+            | 1 | the account does not exist in the partner's system. If the consent is less than five minutes old, then the notication will be retried. If the consent is more than five minutes old, then the consent will be deleted. |
+            | 2 |  `partnerAccountId` and `libreViewAccountId` do not match what is stored in the partner's system. LibreView will delete the consent. |
+
+            For any other response, the notification will be attempted up to five times using a backoff strategy.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+    parameters: []
+  /receive-report:
+    get:
+      summary: GET OPERATION NOT IMPLEMENTED
+      tags: []
+      responses: {}
+      operationId: get-receive-report
+      description: '> GET OPERATION NOT IMPLEMENTED'
+    parameters: []
+    post:
+      summary: Receive Report
+      operationId: post-receive-report
+      responses:
+        '200':
+          description: OK
+      description: TODO
+  /receive-metrics:
+    post:
+      summary: Receive Metrics
+      tags: []
+      responses:
+        '200':
+          description: |-
+            | status | description |
+            | ------------- |
+            | 0 | the notification was successfully received by the partner |
+            | 1 | the account does not exist in the partner's system. If the consent is less than five minutes old, then the notication will be retried. If the consent is more than five minutes old, then the consent will be deleted. |
+            | 2 |  `partnerAccountId` and `libreViewAccountId` do not match what is stored in the partner's system. LibreView will delete the consent. |
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+      operationId: post-receive-metrics
+      description: |-
+        > This endpoint is implemented by each partner, but the requirements are documented here.
+
+        > The actual URL of the endpoint can be anything, i.e. it doesn't have to be `/receive-metrics`, or even consistent between environments.
+
+        Metrics are requested through the `/metrics` endpoint. That endpoint doesn't actually return any metrics. Instead, it returns a `requestId`. Actual metrics are sent to partners asynchronously via a partner-hosted `/receive-metrics` endpoint.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: number
+                reason:
+                  type: string
+                data:
+                  type: object
+                  properties:
+                    requestId:
+                      type: string
+                    partnerAccountId:
+                      type: string
+                    libreViewAccountId:
+                      type: string
+                    devices:
+                      type: object
+                      properties:
+                        '{deviceId}':
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            deviceType:
+                              type: string
+                            version:
+                              type: string
+                    settings:
+                      type:
+                        - string
+                        - object
+                      description: the settings used for the request
+                    metrics:
+                      type: object
+                      properties:
+                        '{metric}':
+                          type: object
+                          properties:
+                            resultType:
+                              type: string
+                            value:
+                              type:
+                                - object
+                                - number
+                              description: 'if the value is complex, the type will be an object'
+          application/xml:
+            schema:
+              type: object
+              properties: {}
+        description: ''
+    parameters: []
+    get:
+      summary: GET OPERATION NOT IMPLEMENTED
+      operationId: get-receive-metrics
+      responses:
+        '200':
+          description: OK
+      description: '> GET OPERATION NOT IMPLEMENTED'
+components:
+  schemas: {}
